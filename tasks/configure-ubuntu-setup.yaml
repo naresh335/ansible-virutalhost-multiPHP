@@ -1,0 +1,120 @@
+- name: Installing apache
+  apt: 
+    name: apache2
+    state: present
+
+- name: Install php repo
+  apt_repository:
+    repo: 'ppa:ondrej/php'
+    state: present
+
+- name: Installing php
+  apt:
+    name: ["php{{php_version}}-common", "php{{php_version}}-cli", "php{{php_version}}-opcache", "php{{php_version}}-gd", "php{{php_version}}-mysql", "php{{php_version}}-curl", "php{{php_version}}-intl", "php{{php_version}}-xsl", "php{{php_version}}-mbstring", "php{{php_version}}-zip", "php{{php_version}}-bcmath", "php{{php_version}}-soap", "php{{php_version}}-xml", "php{{php_version}}-json", "php{{php_version}}-bz2", "php{{php_version}}-fpm"] 
+    state: present
+  tags: fpm
+
+- name: Enabling fpm dependency modules 
+  apache2_module:
+    name: proxy_fcgi
+    state: present
+ 
+- name: Configuring apache to use fpm 
+  copy:
+    src: 000-default.conf
+    dest: "/etc/apache2/sites-available/{{url}}.conf"
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Updating apache config files
+  replace:
+    dest: "/etc/apache2/sites-available/{{url}}.conf"
+    regexp: 'php_version'
+    replace: '{{php_version}}'
+  tags: replace
+
+- name: Setting Project url in apache config
+  replace:
+    dest: "/etc/apache2/sites-available/{{url}}.conf"
+    regexp: 'url'
+    replace: '{{url}}'
+  tags: replace
+
+- name: Adding Project directory to apache config
+  replace:
+    dest: "/etc/apache2/sites-available/{{url}}.conf"
+    regexp: 'username'
+    replace: '{{user}}'
+  tags: replace
+
+- name: Enabling new site "{{url}}"
+  file:
+    src: "/etc/apache2/sites-available/{{url}}.conf"
+    dest: "/etc/apache2/sites-enabled/{{url}}.conf"
+    owner: root
+    group: root
+    state: link
+
+- name: Configuring fpm service
+  copy:
+    src: www.conf
+    dest: "/etc/php/{{php_version}}/fpm/pool.d/{{user}}.conf"
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Updating fpm config files
+  replace:
+    dest: "/etc/php/{{php_version}}/fpm/pool.d/{{user}}.conf"
+    regexp: 'www-data'
+    replace: "{{user}}"
+  tags: fpm
+
+- name: Customizing listening socket 
+  replace:
+    dest: "/etc/php/{{php_version}}/fpm/pool.d/{{user}}.conf"
+    regexp: 'php_version'
+    replace: "{{php_version}}"
+  tags: fpm
+
+- name: Check if "{{url}}" is already defined in hostfile
+  lineinfile:
+    state: absent
+    path: "/etc/hosts"
+    regexp: "{{url}}"
+  check_mode: true
+  register: check
+
+- name: Setting "{{url}}" if undefined
+  lineinfile:
+    state: present
+    path: "/etc/hosts"
+    line: "127.0.0.1 {{url}}"
+  when: check.found == 0
+
+- name: Adding user into www-data group
+  user:
+    name: www-data
+    groups: "{{user}}"
+    append: true
+
+- name: Creating project Directory "/home/{{user}}/projects/{{url}}"
+  file:
+    path: "/home/{{user}}/projects/{{url}}/public"
+    state: directory
+
+- name: Copying test file for dumping phpinfo
+  copy:
+    src: p.php
+    dest: "/home/{{user}}/projects/{{url}}/public/index.php"
+    owner: "{{user}}"
+    group: "{{user}}" 
+    mode: 0644
+
+- name: Reloading service to take changes effect
+  service:
+    name: "{{item}}"
+    state: reloaded
+  loop: ["php{{php_version}}-fpm",apache2]
+  tags: reload, services 

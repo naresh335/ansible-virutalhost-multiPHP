@@ -1,0 +1,4 @@
+- name: Update cache on the server
+  package:
+    update_cache: yes
+  changed_when: false
