@@ -41,6 +41,13 @@
     replace: '{{url}}'
   tags: replace
 
+- name: Setting Project url in apache config
+  replace:
+    dest: "/etc/apache2/sites-available/{{url}}.conf"
+    regexp: 'projects'
+    replace: '{{directory}}'
+  tags: replace
+
 - name: Adding Project directory to apache config
   replace:
     dest: "/etc/apache2/sites-available/{{url}}.conf"
@@ -99,15 +106,18 @@
     groups: "{{user}}"
     append: true
 
-- name: Creating project Directory "/home/{{user}}/projects/{{url}}"
+- name: Creating project Directory "/home/{{user}}/{{directory}}/{{url}}"
   file:
-    path: "/home/{{user}}/projects/{{url}}/public"
+    path: "/home/{{user}}/{{directory}}/{{url}}/public"
     state: directory
+    owner: "{{user}}"
+    group: "{{user}}"
+    mode: 0755
 
 - name: Copying test file for dumping phpinfo
   copy:
     src: p.php
-    dest: "/home/{{user}}/projects/{{url}}/public/index.php"
+    dest: "/home/{{user}}/{{directory}}/{{url}}/public/index.php"
     owner: "{{user}}"
     group: "{{user}}" 
     mode: 0644
