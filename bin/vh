@@ -1,0 +1,15 @@
+#! /usr/bin/env bash
+
+helpFunction()
+{
+   echo ""
+   echo 'Usage: cd ansible-vh && ansible-playbook setup.yaml -K --extra-vars "php_version=7.3 user=dev directory=projects url=app.test'
+   echo -e "\t-php_version php version for your project installation"
+   echo -e "\t-user username for your project installation"
+   echo -e "\t-directory directory path in your home directory"
+   echo -e "\t-url url for your project"
+   exit 1 # Exit script after printing help
+}
+
+echo "Help for ansible virtual host script";
+helpFunction
