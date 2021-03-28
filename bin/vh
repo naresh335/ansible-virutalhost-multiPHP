@@ -11,5 +11,5 @@ helpFunction()
    exit 1 # Exit script after printing help
 }
 
-echo "Help for ansible virtual host script";
+echo "Help for ansible virtualhost configuration script";
 helpFunction
