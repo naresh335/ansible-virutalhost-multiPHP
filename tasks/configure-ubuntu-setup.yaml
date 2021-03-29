@@ -16,7 +16,7 @@
 
 - name: Enabling fpm dependency modules 
   apache2_module:
-    name: {{item}} 
+    name: "{{item}}" 
     state: present
   loop: ["proxy_fcgi","rewrite"]
 
@@ -149,4 +149,11 @@
     name: "{{item}}"
     state: reloaded
   loop: ["php{{php_version}}-fpm",apache2]
-  tags: reload, services, change-url, remove-url
+  tags: reload, services, change-url
+
+- name: Reloading apache service to take changes effect
+  service:
+    name: "{{item}}"
+    state: reloaded
+  loop: [apache2]
+  tags: never, services, remove-url
