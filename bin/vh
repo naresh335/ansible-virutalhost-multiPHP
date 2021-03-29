@@ -3,13 +3,34 @@
 helpFunction()
 {
    echo ""
-   echo 'Usage: cd ansible-vh && ansible-playbook setup.yaml -K --extra-vars "php_version=7.3 user=dev directory=projects url=app.test'
+   echo 'Usage: cd ~/vh && ansible-playbook setup.yaml -K --extra-vars "php_version=7.3 user=dev directory=projects url=app.test'
    echo -e "\t-php_version php version for your project installation"
    echo -e "\t-user username for your project installation"
    echo -e "\t-directory directory path in your home directory"
    echo -e "\t-url url for your project"
+   echo -e ""
+   echo -e "\t Example for updating virtualhost url"
+   echo -e '\t cd ~/vh && ansible-playbook setup.yaml -K --extra-vars "php_version=7.2 user=dev directory=projects url=app2.test" --tags "change-url"' 
+   echo -e ""
+   echo -e "\t Example for removing virtual host"
+   echo -e '\t cd ~/vh && ansible-playbook setup.yaml -K --extra-vars "old_url=top2.test" --tags "remove-url"'
+   echo -e ""
+   echo -e "\t Updating this script" 
+   echo -e '\t vh -u' 
    exit 1 # Exit script after printing help
 }
+
+selfUpdate()
+{
+   curl -L https://git.io/JYnOL | sh
+   exit 1
+}
+
+if [ ${1:-h} = "-u" ] || [ "${1:-h}" = "-U" ]; then
+  selfUpdate
+else
+  helpFunction
+fi
 
 echo "Help for ansible virtualhost configuration script";
 helpFunction

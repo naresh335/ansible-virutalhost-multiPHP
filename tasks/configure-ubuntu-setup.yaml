@@ -10,15 +10,16 @@
 
 - name: Installing php
   apt:
-    name: ["php{{php_version}}-common", "php{{php_version}}-cli", "php{{php_version}}-opcache", "php{{php_version}}-gd", "php{{php_version}}-mysql", "php{{php_version}}-curl", "php{{php_version}}-intl", "php{{php_version}}-xsl", "php{{php_version}}-mbstring", "php{{php_version}}-zip", "php{{php_version}}-bcmath", "php{{php_version}}-soap", "php{{php_version}}-xml", "php{{php_version}}-json", "php{{php_version}}-bz2", "php{{php_version}}-fpm"] 
+    name: ["php{{php_version}}-common", "php{{php_version}}-cli", "php{{php_version}}-opcache", "php{{php_version}}-gd", "php{{php_version}}-mysql", "php{{php_version}}-curl", "php{{php_version}}-intl", "php{{php_version}}-xsl", "php{{php_version}}-mbstring", "php{{php_version}}-zip", "php{{php_version}}-gmp", "php{{php_version}}-mongodb", "php{{php_version}}-bcmath", "php{{php_version}}-soap", "php{{php_version}}-xml", "php{{php_version}}-json", "php{{php_version}}-bz2", "php{{php_version}}-fpm"] 
     state: present
   tags: fpm
 
 - name: Enabling fpm dependency modules 
   apache2_module:
-    name: proxy_fcgi
+    name: {{item}} 
     state: present
- 
+  loop: ["proxy_fcgi","rewrite"]
+
 - name: Configuring apache to use fpm 
   copy:
     src: 000-default.conf
@@ -26,20 +27,21 @@
     owner: root
     group: root
     mode: 0644
+  tags: change-url
 
 - name: Updating apache config files
   replace:
     dest: "/etc/apache2/sites-available/{{url}}.conf"
     regexp: 'php_version'
     replace: '{{php_version}}'
-  tags: replace
+  tags: replace,change-url
 
 - name: Setting Project url in apache config
   replace:
     dest: "/etc/apache2/sites-available/{{url}}.conf"
     regexp: 'url'
     replace: '{{url}}'
-  tags: replace
+  tags: change-url
 
 - name: Setting Project url in apache config
   replace:
@@ -53,7 +55,7 @@
     dest: "/etc/apache2/sites-available/{{url}}.conf"
     regexp: 'username'
     replace: '{{user}}'
-  tags: replace
+  tags: replace,change-url
 
 - name: Enabling new site "{{url}}"
   file:
@@ -62,6 +64,22 @@
     owner: root
     group: root
     state: link
+  tags: change-url
+
+- name: Removing old site "{{old_url}}"
+  file:
+    path: "{{item}}"
+    state: absent
+  loop: ["/etc/apache2/sites-enabled/{{old_url}}.conf","/etc/apache2/sites-available/{{old_url}}.conf"]
+  tags: never, remove-url
+
+- name: Delete entry in hostfile 
+  lineinfile: 
+    path: /etc/hosts
+    regexp: "127.0.0.1 {{old_url}}"
+    state: absent
+   
+  tags: never,remove-url
 
 - name: Configuring fpm service
   copy:
@@ -83,7 +101,7 @@
     dest: "/etc/php/{{php_version}}/fpm/pool.d/{{user}}.conf"
     regexp: 'php_version'
     replace: "{{php_version}}"
-  tags: fpm
+  tags: fpm,change-url
 
 - name: Check if "{{url}}" is already defined in hostfile
   lineinfile:
@@ -92,6 +110,7 @@
     regexp: "{{url}}"
   check_mode: true
   register: check
+  tags: change-url
 
 - name: Setting "{{url}}" if undefined
   lineinfile:
@@ -99,6 +118,7 @@
     path: "/etc/hosts"
     line: "127.0.0.1 {{url}}"
   when: check.found == 0
+  tags: change-url
 
 - name: Adding user into www-data group
   user:
@@ -113,6 +133,7 @@
     owner: "{{user}}"
     group: "{{user}}"
     mode: 0755
+  tags: change-url
 
 - name: Copying test file for dumping phpinfo
   copy:
@@ -121,10 +142,11 @@
     owner: "{{user}}"
     group: "{{user}}" 
     mode: 0644
+  tags: change-url
 
 - name: Reloading service to take changes effect
   service:
     name: "{{item}}"
     state: reloaded
   loop: ["php{{php_version}}-fpm",apache2]
-  tags: reload, services 
+  tags: reload, services, change-url, remove-url

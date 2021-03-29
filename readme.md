@@ -6,6 +6,12 @@
 curl -L https://git.io/JYnOL | sh
 ```
 
+### Updating this script 
+
+```sh
+vh -u
+```
+
 ### Or if you want to go manual, please follow the instructions below
 
 #### Install ansible as its dependent on ansible 

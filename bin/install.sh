@@ -3,11 +3,11 @@ echo "####################### Installing ansible dependencies ##################
 sudo apt update
 sudo apt install software-properties-common
 sudo apt-add-repository --yes --update ppa:ansible/ansible
-sudo apt install --yes wget ansible
+sudo apt install --yes ansible
 
 echo "################ updating help binary 'vn' for getting deploy command ################\n\n"
 
-sudo wget https://git.io/JYnsz -O /usr/local/bin/vh
+sudo curl -qL https://git.io/JYnsz -o /usr/local/bin/vh
 sudo chmod +x /usr/local/bin/vh
 
 echo "################### cloning virtualhost with MultiPHP repo ###########################"
