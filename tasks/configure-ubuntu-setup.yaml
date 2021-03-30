@@ -84,21 +84,21 @@
 - name: Configuring fpm service
   copy:
     src: www.conf
-    dest: "/etc/php/{{php_version}}/fpm/pool.d/{{user}}.conf"
+    dest: "/etc/php/{{php_version}}/fpm/pool.d/{{user}}-user.conf"
     owner: root
     group: root
     mode: 0644
 
 - name: Updating fpm config files
   replace:
-    dest: "/etc/php/{{php_version}}/fpm/pool.d/{{user}}.conf"
+    dest: "/etc/php/{{php_version}}/fpm/pool.d/{{user}}-user.conf"
     regexp: 'www-data'
     replace: "{{user}}"
   tags: fpm
 
 - name: Customizing listening socket 
   replace:
-    dest: "/etc/php/{{php_version}}/fpm/pool.d/{{user}}.conf"
+    dest: "/etc/php/{{php_version}}/fpm/pool.d/{{user}}-user.conf"
     regexp: 'php_version'
     replace: "{{php_version}}"
   tags: fpm,change-url
