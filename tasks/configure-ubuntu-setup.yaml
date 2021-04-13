@@ -2,23 +2,26 @@
   apt: 
     name: apache2
     state: present
+  tags: always
 
 - name: Install php repo
   apt_repository:
     repo: 'ppa:ondrej/php'
     state: present
+  tags: always
 
 - name: Installing php
   apt:
     name: ["php{{php_version}}-common", "php{{php_version}}-cli", "php{{php_version}}-opcache", "php{{php_version}}-gd", "php{{php_version}}-mysql", "php{{php_version}}-curl", "php{{php_version}}-intl", "php{{php_version}}-xsl", "php{{php_version}}-mbstring", "php{{php_version}}-zip", "php{{php_version}}-gmp", "php{{php_version}}-mongodb", "php{{php_version}}-bcmath", "php{{php_version}}-soap", "php{{php_version}}-xml", "php{{php_version}}-json", "php{{php_version}}-bz2", "php{{php_version}}-fpm"] 
     state: present
-  tags: fpm
+  tags: fpm, always
 
 - name: Enabling fpm dependency modules 
   apache2_module:
     name: "{{item}}" 
     state: present
   loop: ["proxy_fcgi","rewrite"]
+  tags: always
 
 - name: Configuring apache to use fpm 
   copy:
@@ -27,35 +30,35 @@
     owner: root
     group: root
     mode: 0644
-  tags: change-url
+  tags: change-url, always
 
 - name: Updating apache config files
   replace:
     dest: "/etc/apache2/sites-available/{{url}}.conf"
     regexp: 'php_version'
     replace: '{{php_version}}'
-  tags: replace,change-url
+  tags: replace,change-url, always
 
 - name: Setting Project url in apache config
   replace:
     dest: "/etc/apache2/sites-available/{{url}}.conf"
     regexp: 'url'
     replace: '{{url}}'
-  tags: change-url
+  tags: change-url, always
 
 - name: Setting Project url in apache config
   replace:
     dest: "/etc/apache2/sites-available/{{url}}.conf"
     regexp: 'projects'
     replace: '{{directory}}'
-  tags: replace
+  tags: replace, always
 
 - name: Adding Project directory to apache config
   replace:
     dest: "/etc/apache2/sites-available/{{url}}.conf"
     regexp: 'username'
     replace: '{{user}}'
-  tags: replace,change-url
+  tags: replace,change-url, always
 
 - name: Enabling new site "{{url}}"
   file:
@@ -64,7 +67,7 @@
     owner: root
     group: root
     state: link
-  tags: change-url
+  tags: change-url, always
 
 - name: Removing old site "{{old_url}}"
   file:
@@ -88,20 +91,21 @@
     owner: root
     group: root
     mode: 0644
+  tags: always
 
 - name: Updating fpm config files
   replace:
     dest: "/etc/php/{{php_version}}/fpm/pool.d/{{user}}-user.conf"
     regexp: 'www-data'
     replace: "{{user}}"
-  tags: fpm
+  tags: fpm, always
 
 - name: Customizing listening socket 
   replace:
     dest: "/etc/php/{{php_version}}/fpm/pool.d/{{user}}-user.conf"
     regexp: 'php_version'
     replace: "{{php_version}}"
-  tags: fpm,change-url
+  tags: fpm,change-url,always
 
 - name: Check if "{{url}}" is already defined in hostfile
   lineinfile:
@@ -110,7 +114,7 @@
     regexp: "{{url}}"
   check_mode: true
   register: check
-  tags: change-url
+  tags: change-url,always
 
 - name: Setting "{{url}}" if undefined
   lineinfile:
@@ -118,13 +122,14 @@
     path: "/etc/hosts"
     line: "127.0.0.1 {{url}}"
   when: check.found == 0
-  tags: change-url
+  tags: change-url,always
 
 - name: Adding user into www-data group
   user:
     name: www-data
     groups: "{{user}}"
     append: true
+  tags: always
 
 - name: Creating project Directory "/home/{{user}}/{{directory}}/{{url}}"
   file:
@@ -133,7 +138,7 @@
     owner: "{{user}}"
     group: "{{user}}"
     mode: 0755
-  tags: change-url
+  tags: change-url,always
 
 - name: Copying test file for dumping phpinfo
   copy:
@@ -142,14 +147,79 @@
     owner: "{{user}}"
     group: "{{user}}" 
     mode: 0644
-  tags: change-url
+  tags: never, phpinfo, change-url
+
+- name: Checking if project directory is empty
+  stat:
+    path: "/home/{{user}}/{{directory}}/{{url}}/public/index.php"
+  register: project_already_installed
+  tags: never, phpmyadmin, wordpress
+
+- name: project installation failed, check if project directory is empty
+  debug: var=project_already_installed.stderr_lines
+  when: project_already_installed.stderr_lines is defined
+  tags: never, phpmyadmin, wordpress
+
+- name: Installing phpmyadmin
+  ansible.builtin.unarchive:
+    src: https://files.phpmyadmin.net/phpMyAdmin/5.1.0/phpMyAdmin-5.1.0-english.tar.xz
+    dest: "/home/{{user}}/{{directory}}/{{url}}/public/"
+    remote_src: yes
+    extra_opts: [--strip-components=1]
+  when: not project_already_installed.stat.exists
+  tags: never, phpmyadmin
+
+- name: Installing wordpress
+  ansible.builtin.unarchive:
+    src: https://wordpress.org/latest.tar.gz
+    dest: "/home/{{user}}/{{directory}}/{{url}}/public/"
+    remote_src: yes
+    extra_opts: [--strip-components=1]
+  when: not project_already_installed.stat.exists
+  tags: never, wordpress
+
+- name: Check if composer is already installed
+  stat:
+    path: /usr/local/bin/composerv2
+  register: composerv2_installed
+  tags: always, laravel
+
+- name: Installing Composer as laravel dependency
+  shell: curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composerv2
+  when: not composerv2_installed.stat.exists
+  tags: never, laravel
+
+- name: Making Composer Executable
+  shell: chmod a+x /usr/local/bin/composerv2
+  when: not composerv2_installed.stat.exists
+  tags: never, laravel
+
+- name: Composer Self Update
+  shell: composerv2 self-update
+  tags: never, laravel
+
+- name: Removing public directory if empty
+  shell: rmdir "/home/{{user}}/{{directory}}/{{url}}/public"
+  tags: never, laravel
+
+- name: Installing laravel
+  shell: composerv2 create-project laravel/laravel "/home/{{user}}/{{directory}}/{{url}}"
+  register: command_result
+  become_user: "{{user}}"
+  failed_when: "'FAILED' in command_result.stderr"
+  tags: never, laravel
+
+- name: Laravel installation failed, check if project directory is empty
+  debug: var=command_result.stderr_lines
+  when: command_result.stderr_lines is defined
+  tags: never, laravel
 
 - name: Reloading service to take changes effect
   service:
     name: "{{item}}"
     state: reloaded
   loop: ["php{{php_version}}-fpm",apache2]
-  tags: reload, services, change-url
+  tags: reload, services, change-url, always
 
 - name: Reloading apache service to take changes effect
   service:

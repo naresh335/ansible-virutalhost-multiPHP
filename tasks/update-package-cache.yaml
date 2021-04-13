@@ -2,3 +2,4 @@
   package:
     update_cache: yes
   changed_when: false
+  tags: always

@@ -3,11 +3,14 @@
 helpFunction()
 {
    echo ""
-   echo 'Usage: cd ~/vh && ansible-playbook setup.yaml -K --extra-vars "php_version=7.3 user=dev directory=projects url=app.test'
+   echo 'Usage: cd ~/vh && ansible-playbook setup.yaml -K --extra-vars "php_version=7.3 user=dev directory=projects url=app.test" --tags "phpinfo"'
    echo -e "\t-php_version php version for your project installation"
    echo -e "\t-user username for your project installation"
    echo -e "\t-directory directory path in your home directory"
    echo -e "\t-url url for your project"
+   echo -e ""
+   echo -e "\t Example for creating virtualhost url with phpmyadmin"
+   echo -e '\t cd ~/vh && ansible-playbook setup.yaml -K --extra-vars "php_version=7.3 user=dev directory=projects url=app.test" --tags "[laravel|wordpress|phpmyadmin]"' 
    echo -e ""
    echo -e "\t Example for updating virtualhost url"
    echo -e '\t cd ~/vh && ansible-playbook setup.yaml -K --extra-vars "php_version=7.2 user=dev directory=projects url=app2.test" --tags "change-url"' 
