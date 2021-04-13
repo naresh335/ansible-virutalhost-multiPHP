@@ -9,14 +9,15 @@ helpFunction()
    echo -e "\t-directory directory path in your home directory"
    echo -e "\t-url url for your project"
    echo -e ""
-   echo -e "\t Example for creating virtualhost url with phpmyadmin"
-   echo -e '\t cd ~/vh && ansible-playbook setup.yaml -K --extra-vars "php_version=7.3 user=dev directory=projects url=app.test" --tags "[laravel|wordpress|phpmyadmin]"' 
+   echo -e "\t Example for creating virtualhost with laravel or wordpress or phpmyadmin"
+   echo -e '\t (please use one of the options e.g. --tags "wordpress")'
+   echo -e '\t cd ~/vh && ansible-playbook setup.yaml -K --extra-vars "php_version=7.3 user=dev directory=projects url=app.test" --tags "laravel"' 
    echo -e ""
    echo -e "\t Example for updating virtualhost url"
    echo -e '\t cd ~/vh && ansible-playbook setup.yaml -K --extra-vars "php_version=7.2 user=dev directory=projects url=app2.test" --tags "change-url"' 
    echo -e ""
    echo -e "\t Example for removing virtual host"
-   echo -e '\t cd ~/vh && ansible-playbook setup.yaml -K --extra-vars "old_url=top2.test" --tags "remove-url"'
+   echo -e '\t cd ~/vh && ansible-playbook setup.yaml -K --extra-vars "old_url=app.test" --tags "remove-url"'
    echo -e ""
    echo -e "\t Updating this script" 
    echo -e '\t vh -u' 
