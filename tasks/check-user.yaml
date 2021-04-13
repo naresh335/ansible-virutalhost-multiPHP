@@ -1,0 +1,10 @@
+- name: Check if user exists
+  stat:
+    path: "/home/{{user}}"
+  register: existing_user
+  tags: always
+
+- name: Fail if user {{user}} does not exists
+  fail: msg="User {{user}} does not exists"
+  when: not existing_user.stat.exists
+  tags: always

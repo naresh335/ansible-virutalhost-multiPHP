@@ -4,6 +4,7 @@
 
   tasks:
 
+  - include: tasks/check-user.yaml
   - include: tasks/update-package-cache.yaml
   - include: tasks/configure-ubuntu-setup.yaml
     when: ansible_distribution in ["Debian","Ubuntu"]

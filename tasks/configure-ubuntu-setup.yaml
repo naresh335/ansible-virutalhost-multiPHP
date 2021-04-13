@@ -200,6 +200,7 @@
 
 - name: Removing public directory if empty
   shell: rmdir "/home/{{user}}/{{directory}}/{{url}}/public"
+  ignore_errors: true
   tags: never, laravel
 
 - name: Installing laravel
