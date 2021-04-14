@@ -182,26 +182,26 @@
   stat:
     path: /usr/local/bin/composerv2
   register: composerv2_installed
-  tags: always, laravel
+  tags: always, laravel, laravel_version
 
 - name: Installing Composer as laravel dependency
   shell: curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composerv2
   when: not composerv2_installed.stat.exists
-  tags: never, laravel
+  tags: never, laravel, laravel_version
 
 - name: Making Composer Executable
   shell: chmod a+x /usr/local/bin/composerv2
   when: not composerv2_installed.stat.exists
-  tags: never, laravel
+  tags: never, laravel, laravel_version
 
 - name: Composer Self Update
   shell: composerv2 self-update
-  tags: never, laravel
+  tags: never, laravel, laravel_version
 
 - name: Removing public directory if empty
   shell: rmdir "/home/{{user}}/{{directory}}/{{url}}/public"
   ignore_errors: true
-  tags: never, laravel
+  tags: never, laravel, laravel_version
 
 - name: Installing laravel
   shell: composerv2 create-project laravel/laravel "/home/{{user}}/{{directory}}/{{url}}"
@@ -210,10 +210,17 @@
   failed_when: "'FAILED' in command_result.stderr"
   tags: never, laravel
 
+- name: Installing laravel version {{laravel_version}}
+  shell: composerv2 create-project --prefer-dist laravel/laravel "/home/{{user}}/{{directory}}/{{url}}" "{{laravel_version}}"
+  register: command_result
+  become_user: "{{user}}"
+  failed_when: "'FAILED' in command_result.stderr"
+  tags: never, laravel_version
+
 - name: Laravel installation failed, check if project directory is empty
   debug: var=command_result.stderr_lines
   when: command_result.stderr_lines is defined
-  tags: never, laravel
+  tags: never, laravel, laravel_version
 
 - name: Reloading service to take changes effect
   service:
