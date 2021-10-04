@@ -33,9 +33,9 @@ git clone https://github.com/naresh335/ansible-virutalhost-multiPHP.git ~/vh
 sudo wget https://git.io/JYnsz -O /usr/local/bin/vh
 ```
 
-#### cd into vh directory and update php_version, user, directory, url according to your requirements
+#### Update php_version, user, directory, url according to your requirements
 ```sh
-cd ~/vh && ansible-playbook setup.yaml -K --extra-vars "php_version=7.3 user=dev directory=projects url=app.test"
+ansible-playbook ~/vh/setup.yaml -K --extra-vars "php_version=7.3 user=dev directory=projects url=app.test"
 ```
 > Note: make sure to update `php_version,user,directory,url` accordingly
 

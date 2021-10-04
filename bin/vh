@@ -3,7 +3,7 @@
 helpFunction()
 {
    echo ""
-   echo 'Usage: cd ~/vh && ansible-playbook setup.yaml -K --extra-vars "php_version=7.3 user=dev directory=projects url=app.test" --tags "phpinfo"'
+   echo 'Usage: ansible-playbook ~/vh/setup.yaml -K --extra-vars "php_version=7.3 user=dev directory=projects url=app.test" --tags "phpinfo"'
    echo -e "\t-php_version php version for your project installation"
    echo -e "\t-user username for your project installation"
    echo -e "\t-directory directory path in your home directory"
@@ -11,17 +11,17 @@ helpFunction()
    echo -e ""
    echo -e "\t Example for creating virtualhost with laravel or wordpress or phpmyadmin"
    echo -e '\t (please use one of the options e.g. --tags "wordpress")'
-   echo -e '\t cd ~/vh && ansible-playbook setup.yaml -K --extra-vars "php_version=7.3 user=dev directory=projects url=app.test" --tags "laravel"' 
+   echo -e '\t ansible-playbook ~/vh/setup.yaml -K --extra-vars "php_version=7.3 user=dev directory=projects url=app.test" --tags "laravel"' 
    echo -e ""
    echo -e "\t Example for creating virtualhost with specific laravel version"
    echo -e '\t (please specify version as 5.8|6.*|7.*|8.* e.g. --extra-vars "laravel_version=6.*")'
-   echo -e '\t cd ~/vh && ansible-playbook setup.yaml -K --extra-vars "php_version=7.3 user=dev directory=projects url=app.test laravel_version=6.*" --tags "laravel_version"' 
+   echo -e '\t ansible-playbook ~/vh/setup.yaml -K --extra-vars "php_version=7.3 user=dev directory=projects url=app.test laravel_version=6.*" --tags "laravel_version"' 
    echo -e ""
    echo -e "\t Example for updating virtualhost url"
-   echo -e '\t cd ~/vh && ansible-playbook setup.yaml -K --extra-vars "php_version=7.2 user=dev directory=projects url=app2.test" --tags "change-url"' 
+   echo -e '\t ansible-playbook ~/vh/setup.yaml -K --extra-vars "php_version=7.2 user=dev directory=projects url=app2.test" --tags "change-url"' 
    echo -e ""
    echo -e "\t Example for removing virtual host"
-   echo -e '\t cd ~/vh && ansible-playbook setup.yaml -K --extra-vars "old_url=app.test" --tags "remove-url"'
+   echo -e '\t ansible-playbook ~/vh/setup.yaml -K --extra-vars "old_url=app.test" --tags "remove-url"'
    echo -e ""
    echo -e "\t Updating this script" 
    echo -e '\t vh -u' 
