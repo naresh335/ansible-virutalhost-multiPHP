@@ -1,19 +1,37 @@
 - name: Installing apache
-  apt: 
-    name: apache2
+  yum: 
+    name: httpd
     state: present
   tags: always
 
-- name: Install php repo
-  apt_repository:
-    repo: 'ppa:ondrej/php'
+- name: Enable EPEL Repository on CentOS 8
+  dnf:
+    name: epel-release
+    state: latest
+  when: ansible_facts['os_family'] == 'RedHat' and ansible_facts['distribution_major_version'] == '8'
+
+- name: Enable EPEL Repository on CentOS 7
+  yum:
+    name: epel-release
+    state: latest
+  when: ansible_facts['os_family'] == 'RedHat' and ansible_facts['distribution_major_version'] == '7'
+  tags: always
+
+- name: Installing Remi Repository
+  yum:
+    name: https://rpms.remirepo.net/enterprise/remi-release-7.rpm
     state: present
   tags: always
 
 - name: Installing php
-  apt:
-    name: ["php{{php_version}}-common", "php{{php_version}}-cli", "php{{php_version}}-opcache", "php{{php_version}}-gd", "php{{php_version}}-mysql", "php{{php_version}}-curl", "php{{php_version}}-intl", "php{{php_version}}-xsl", "php{{php_version}}-mbstring", "php{{php_version}}-zip", "php{{php_version}}-gmp", "php{{php_version}}-mongodb", "php{{php_version}}-bcmath", "php{{php_version}}-soap", "php{{php_version}}-xml", "php{{php_version}}-json", "php{{php_version}}-bz2", "php{{php_version}}-fpm"] 
+  yum:
+    enablerepo: "remi,remi-php{{php_version|replace('.','')}}"
+    name: ["php{{php_version|replace('.','')}}-php-common", "php{{php_version|replace('.','')}}-php-cli", "php{{php_version|replace('.','')}}-php-opcache", "php{{php_version|replace('.','')}}-php-gd", "php{{php_version|replace('.','')}}-php-mysql", "php{{php_version|replace('.','')}}-php-curl", "php{{php_version|replace('.','')}}-php-intl", "php{{php_version|replace('.','')}}-php-xsl", "php{{php_version|replace('.','')}}-php-mbstring", "php{{php_version|replace('.','')}}-php-zip", "php{{php_version|replace('.','')}}-php-gmp", "php{{php_version|replace('.','')}}-php-pecl-mongodb", "php{{php_version|replace('.','')}}-php-bcmath", "php{{php_version|replace('.','')}}-php-soap", "php{{php_version|replace('.','')}}-php-xml", "php{{php_version|replace('.','')}}-php-json", "php{{php_version|replace('.','')}}-php-bz2", "php{{php_version|replace('.','')}}-php-fpm"] 
     state: present
+  tags: fpm, always
+
+- name: Addding php entry in bin
+  shell: "alternatives --install /usr/local/bin/php php /opt/remi/php{{php_version|replace('.','')}}/root/bin/php {{php_version|replace('.','')}}"
   tags: fpm, always
 
 - name: Check if changephp is already defined
@@ -29,21 +47,51 @@
   lineinfile:
     state: present
     path: "/home/{{user}}/.bashrc"
-    line: "alias changephp='sudo update-alternatives --config php'"
+    line: "alias changephp='sudo alternatives --config php'"
   when: check_changephp.found == 0
   tags: always
 
-- name: Enabling fpm dependency modules 
-  apache2_module:
-    name: "{{item}}" 
-    state: present
-  loop: ["proxy_fcgi","rewrite"]
+- name: Creating apache conf directory
+  file:
+    path: "{{item}}"
+    state: directory
+    owner: root
+    group: root
+    mode: 0775
+  loop:
+    - /etc/httpd/sites-available
+    - /var/run/php
+    - "/home/{{user}}/{{directory}}/logs"
+  tags: always
+
+- name: Setting home directory permissions
+  file:
+    path: "/home/{{user}}"
+    state: directory
+    mode: 0750
+  tags: always
+
+- name: Setting up selinux policy for directories
+  sefcontext:
+   target: '{{ item.target }}(/.*)?'
+   setype: "{{ item.setype }}"
+   reload: True
+   state: present
+  register: filecontext
+  with_items:
+  - { target: '/home/{{user}}/{{directory}}', setype: 'httpd_sys_rw_content_t' }
+  tags: always
+
+- name: Run restore context to reload selinux
+  shell: "restorecon -R -v /home/{{item.target}}"
+  with_items:
+  - { index: 0, target: '{{user}}/{{directory}}' }
   tags: always
 
 - name: Configuring apache to use fpm 
   copy:
     src: 000-default.conf
-    dest: "/etc/apache2/sites-available/{{url}}.conf"
+    dest: "/etc/httpd/sites-available/{{url}}.conf"
     owner: root
     group: root
     mode: 0644
@@ -51,36 +99,36 @@
 
 - name: Updating apache config files
   replace:
-    dest: "/etc/apache2/sites-available/{{url}}.conf"
+    dest: "/etc/httpd/sites-available/{{url}}.conf"
     regexp: 'php_version'
     replace: '{{php_version}}'
   tags: replace,change-url, always
 
 - name: Setting Project url in apache config
   replace:
-    dest: "/etc/apache2/sites-available/{{url}}.conf"
+    dest: "/etc/httpd/sites-available/{{url}}.conf"
     regexp: 'url'
     replace: '{{url}}'
   tags: change-url, always
 
 - name: Setting Project url in apache config
   replace:
-    dest: "/etc/apache2/sites-available/{{url}}.conf"
+    dest: "/etc/httpd/sites-available/{{url}}.conf"
     regexp: 'projects'
     replace: '{{directory}}'
   tags: replace, always
 
 - name: Adding Project directory to apache config
   replace:
-    dest: "/etc/apache2/sites-available/{{url}}.conf"
+    dest: "/etc/httpd/sites-available/{{url}}.conf"
     regexp: 'username'
     replace: '{{user}}'
   tags: replace,change-url, always
 
 - name: Enabling new site "{{url}}"
   file:
-    src: "/etc/apache2/sites-available/{{url}}.conf"
-    dest: "/etc/apache2/sites-enabled/{{url}}.conf"
+    src: "/etc/httpd/sites-available/{{url}}.conf"
+    dest: "/etc/httpd/conf.d/{{url}}.conf"
     owner: root
     group: root
     state: link
@@ -90,7 +138,7 @@
   file:
     path: "{{item}}"
     state: absent
-  loop: ["/etc/apache2/sites-enabled/{{old_url}}.conf","/etc/apache2/sites-available/{{old_url}}.conf"]
+  loop: ["/etc/httpd/conf.d/{{old_url}}.conf","/etc/httpd/sites-available/{{old_url}}.conf"]
   tags: never, remove-url
 
 - name: Delete entry in hostfile 
@@ -104,7 +152,7 @@
 - name: Configuring fpm service
   copy:
     src: www.conf
-    dest: "/etc/php/{{php_version}}/fpm/pool.d/{{user}}-user.conf"
+    dest: "/etc/opt/remi/php{{php_version|replace('.','')}}/php-fpm.d/{{user}}-user.conf"
     owner: root
     group: root
     mode: 0644
@@ -112,17 +160,25 @@
 
 - name: Updating fpm config files
   replace:
-    dest: "/etc/php/{{php_version}}/fpm/pool.d/{{user}}-user.conf"
+    dest: "/etc/opt/remi/php{{php_version|replace('.','')}}/php-fpm.d/{{user}}-user.conf"
     regexp: 'www-data'
     replace: "{{user}}"
   tags: fpm, always
 
 - name: Customizing listening socket 
   replace:
-    dest: "/etc/php/{{php_version}}/fpm/pool.d/{{user}}-user.conf"
+    dest: "/etc/opt/remi/php{{php_version|replace('.','')}}/php-fpm.d/{{user}}-user.conf"
     regexp: 'php_version'
     replace: "{{php_version}}"
   tags: fpm,change-url,always
+
+- name: Fixing default fpm config
+  lineinfile: 
+    path: "/etc/opt/remi/php{{php_version|replace('.','')}}/php-fpm.d/www.conf"
+    regexp: '^(.*)listen \= 127\.0\.0\.1(.*)$' 
+    line: "listen = /var/run/php/php{{php_version|replace('.','')}}-fpm.sock"
+    backrefs: yes
+  tags: always
 
 - name: Check if "{{url}}" is already defined in hostfile
   lineinfile:
@@ -143,21 +199,18 @@
 
 - name: Adding user into www-data group
   user:
-    name: www-data
+    name: apache
     groups: "{{user}}"
     append: true
   tags: always
 
 - name: Creating project Directory "/home/{{user}}/{{directory}}/{{url}}"
   file:
-    path: "{{item}}"
+    path: "/home/{{user}}/{{directory}}/{{url}}/public"
     state: directory
     owner: "{{user}}"
     group: "{{user}}"
     mode: 0755
-  loop:
-    - "/home/{{user}}/{{directory}}/{{url}}/public"
-    - "/home/{{user}}/{{directory}}/logs"
   tags: change-url,always
 
 - name: Copying test file for dumping phpinfo
@@ -224,14 +277,14 @@
   tags: never, laravel, laravel_version
 
 - name: Installing laravel
-  shell: composerv2 create-project laravel/laravel "/home/{{user}}/{{directory}}/{{url}}"
+  shell: /usr/local/bin/composerv2 create-project laravel/laravel "/home/{{user}}/{{directory}}/{{url}}"
   register: command_result
   become_user: "{{user}}"
   failed_when: "'FAILED' in command_result.stderr"
   tags: never, laravel
 
 - name: Installing laravel version {{laravel_version}}
-  shell: composerv2 create-project --prefer-dist laravel/laravel "/home/{{user}}/{{directory}}/{{url}}" "{{laravel_version}}"
+  shell: /usr/local/bin/composerv2 create-project --prefer-dist laravel/laravel "/home/{{user}}/{{directory}}/{{url}}" "{{laravel_version}}"
   register: command_result
   become_user: "{{user}}"
   failed_when: "'FAILED' in command_result.stderr"
@@ -246,12 +299,13 @@
   service:
     name: "{{item}}"
     state: reloaded
-  loop: ["php{{php_version}}-fpm",apache2]
+    enabled: true
+  loop: ["php{{php_version|replace('.','')}}-php-fpm",httpd]
   tags: reload, services, change-url, always
 
 - name: Reloading apache service to take changes effect
   service:
     name: "{{item}}"
     state: reloaded
-  loop: [apache2]
+  loop: ["httpd"]
   tags: never, services, remove-url

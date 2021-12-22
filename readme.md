@@ -41,14 +41,20 @@ ansible-playbook ~/vh/setup.yaml -K --extra-vars "php_version=7.3 user=dev direc
 
 directory variable should expand in this case from **projects** -> */home/dev/projects*
 
-Examples for directory variable.
+Examples for `directory` variable.
 
-| project | Full path used in installation |
+| if `directory` = | Full path used in installation |
 | ------ | ------ |
-| Apps | */home/dev/Apps* |
+| projects | */home/dev/projects* |
 | Workspace | */home/dev/Workspace* |
 | Documents/public_html | */home/dev/Documents/public_html* |
 
+#### logs directory
+| if `directory` = | Full path for logs dir |
+| ------ | ------ |
+| projects | */home/dev/projects/logs* |
+| Workspace | */home/dev/Workspace/logs* |
+| Documents/public_html | */home/dev/Documents/public_html/logs* |
 
 ##### since root access is required for installation authenticate installtion with your system password
 
