@@ -1,3 +1,12 @@
+- name: get the current user
+  become: false
+  command: whoami
+  register: whoami
+  tags: always
+
+- set_fact: user={{whoami.stdout}}
+  tags: always
+
 - name: Check if user exists
   stat:
     path: "/home/{{user}}"

@@ -1,5 +1,6 @@
 - name: Update cache on the server
   package:
-    update_cache: yes
+    update_cache: true
+    cache_valid_time: 10800
   changed_when: false
   tags: always
