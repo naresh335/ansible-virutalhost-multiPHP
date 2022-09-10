@@ -15,5 +15,5 @@ echo "################### cloning virtualhost with MultiPHP repo ###############
 rm -rf ~/vh
 git clone https://github.com/naresh335/ansible-virutalhost-multiPHP.git ~/vh
 echo "\n\ncopy & modify this command or run '$(tput bold)vh -h$(tput sgr0)' for getting this command during any session\n\n"
-echo 'ansible-playbook ~/vh/setup.yaml -K --extra-vars "php_version=7.3 user=dev directory=projects url=app.test"'
+echo 'ansible-playbook ~/vh/setup.yaml -K --extra-vars "php_version=7.4 directory=projects url=app.test" --tags "phpinfo"'
 cd ~/vh && exec ${SHELL}
