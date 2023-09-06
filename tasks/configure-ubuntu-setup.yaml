@@ -5,15 +5,8 @@
   tags: always
 
 - name: Install php repo
-  apt_repository:
-    repo: 'ppa:ondrej/php'
-    state: present
-  tags: always
-  when: ansible_distribution_major_version.find("22") == -1
-
-- name: Install php repo
   ansible.builtin.shell: add-apt-repository --yes ppa:ondrej/php 
-  when: ansible_distribution_major_version.find("22") != -1
+  tags: always
 
 - name: Installing php 5.x
   apt:
@@ -202,10 +195,12 @@
 
 - name: Installing phpmyadmin
   ansible.builtin.unarchive:
-    src: https://files.phpmyadmin.net/phpMyAdmin/5.1.0/phpMyAdmin-5.1.0-english.tar.xz
+    src: https://www.phpmyadmin.net/downloads/phpMyAdmin-latest-english.tar.xz
     dest: "/home/{{user}}/{{directory}}/{{url}}/public/"
     remote_src: yes
     extra_opts: [--strip-components=1]
+    owner: "{{user}}"
+    group: "{{user}}" 
   when: not project_already_installed.stat.exists
   tags: never, phpmyadmin
 
@@ -215,6 +210,8 @@
     dest: "/home/{{user}}/{{directory}}/{{url}}/public/"
     remote_src: yes
     extra_opts: [--strip-components=1]
+    owner: "{{user}}"
+    group: "{{user}}" 
   when: not project_already_installed.stat.exists
   tags: never, wordpress
 

@@ -4,9 +4,9 @@
 
   tasks:
 
-  - include: tasks/check-user.yaml
-  - include: tasks/update-package-cache.yaml
-  - include: tasks/configure-ubuntu-setup.yaml
+  - import_tasks: tasks/check-user.yaml
+  - import_tasks: tasks/update-package-cache.yaml
+  - import_tasks: tasks/configure-ubuntu-setup.yaml
     when: ansible_distribution in ["Debian","Ubuntu"]
-  - include: tasks/configure-centos-setup.yaml
+  - import_tasks: tasks/configure-centos-setup.yaml
     when: ansible_distribution in ["Amazon","RedHat","CentOS"]

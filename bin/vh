@@ -1,27 +1,36 @@
 #! /usr/bin/env bash
 
+PHP_VERSION=
+DIRECTORY="projects"
+URL=
+TYPE="phpinfo"
+CREATE=true
+REMOVE=false
+ANSIBLE_PLAYBOOK=$(which ansible-playbook)
+bold=$(tput bold)
+red=$(tput setaf 1)
+green=$(tput setaf 2)
+reset=$(tput sgr0)
+
 helpFunction()
 {
    echo ""
-   echo -e 'Usage: \n\tansible-playbook ~/vh/setup.yaml -K --extra-vars "directory=projects php_version=7.4 url=app.test" --tags "phpinfo"'
+   echo -e "Usage: ${bold}vh -c -php 7.4 -url app.test${reset}"
    echo -e "\t---"
-   echo -e "\t-php_version php version for your project installation"
-   echo -e "\t-directory directory path in your home directory"
+   echo -e "\t-c create mode | OPTIONAL"
+   echo -e "\t-php php version for your project installation"
+   echo -e "\t-dir project directory path (if none specifed ~/projects will be used)"
    echo -e "\t-url url for your project"
    echo -e ""
    echo -e "\t Example for creating virtualhost with laravel or wordpress or phpmyadmin"
-   echo -e '\t (please use one of the options e.g. --tags "wordpress")'
-   echo -e '\t ansible-playbook ~/vh/setup.yaml -K --extra-vars "directory=projects php_version=7.4 url=app.test" --tags "laravel"' 
-   echo -e ""
-   echo -e "\t Example for creating virtualhost with specific laravel version"
-   echo -e '\t (please specify version as 5.8|6.*|7.*|8.* e.g. --extra-vars "laravel_version=6.*")'
-   echo -e '\t ansible-playbook ~/vh/setup.yaml -K --extra-vars "directory=projects php_version=7.4 url=app.test laravel_version=6.*" --tags "laravel_version"' 
+   echo -e '\t (please use one of the options e.g. -t phpmyadmin)'
+   echo -e "\t ${bold}vh -c -php 7.4 -dir projects -url pma.test -t phpmyadmin${reset}"
    echo -e ""
    echo -e "\t Example for updating virtualhost url"
-   echo -e '\t ansible-playbook ~/vh/setup.yaml -K --extra-vars "php_version=7.2 directory=projects url=app2.test" --tags "change-url"' 
+   echo -e "\t vh -c -php 7.4 -dir projects -url phpmyadmin.test -t change-url"
    echo -e ""
    echo -e "\t Example for removing virtual host"
-   echo -e '\t ansible-playbook ~/vh/setup.yaml -K --extra-vars "old_url=app.test" --tags "remove-url"'
+   echo -e "\t ${bold}vh -r -url phpmyadmin.test${reset}"
    echo -e ""
    echo -e "\t Updating this script" 
    echo -e '\t vh -u' 
@@ -36,9 +45,58 @@ selfUpdate()
 
 if [ ${1:-h} = "-u" ] || [ "${1:-h}" = "-U" ]; then
   selfUpdate
-else
-  helpFunction
 fi
 
-echo "Help for ansible virtualhost configuration script";
-helpFunction
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -php)
+            PHP_VERSION="$2"
+            shift
+            ;;
+        -dir)
+            DIRECTORY="$2"
+            shift
+            ;;
+        -url)
+            URL="$2"
+            shift
+            ;;
+        -t)
+            TYPE="$2"
+            shift
+            ;;
+        -c)
+            CREATE=true
+            ;;
+        -r)
+            REMOVE=true
+            ;;
+        -h)
+            helpFunction
+            exit 1
+            ;;
+       
+        *)
+            echo "Invalid argument: $1"
+            exit 1
+            ;;
+    esac
+    shift
+done
+
+if [ "$REMOVE" = true ]; then
+    CREATE=false
+    echo -e "\nRemoving virtual host configs for ${bold}${red}$URL${reset}, project code will not be removed!"
+    $ANSIBLE_PLAYBOOK ~/vh/remove.yaml -K --extra-vars "old_url=$URL" --tags "remove-url"
+    exit 1
+fi
+
+if [ -z "$PHP_VERSION" ] || [ -z "$DIRECTORY" ] || [ -z "$URL" ]; then
+    helpFunction
+    exit 1
+fi
+
+echo -e "\nCreating virtual host for ${bold}${green}$URL${reset} with ${bold}${green}$PHP_VERSION${reset} at directory ${bold}${green}$DIRECTORY/$URL${reset}"
+$ANSIBLE_PLAYBOOK ~/vh/setup.yaml -K --extra-vars "php_version=$PHP_VERSION directory=$DIRECTORY url=$URL" --tags "$TYPE"
+echo -e "\nCreated virtual host for ${bold}${green}$URL${reset} with ${bold}${green}$PHP_VERSION${reset} at directory ${bold}${green}$DIRECTORY/$URL${reset}"
+echo -e "\nOpen your virtual host: \033]8;;http://$URL\033\\http://$URL\033]8;;\033\\"

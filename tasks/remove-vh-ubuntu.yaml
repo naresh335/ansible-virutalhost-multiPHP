@@ -1,0 +1,21 @@
+- name: Removing site "{{old_url}}"
+  file:
+    path: "{{item}}"
+    state: absent
+  loop: ["/etc/apache2/sites-enabled/{{old_url}}.conf","/etc/apache2/sites-available/{{old_url}}.conf"]
+  tags: never, remove-url
+
+- name: Deleting entry from hostfile 
+  lineinfile: 
+    path: /etc/hosts
+    regexp: "127.0.0.1 {{old_url}}"
+    state: absent
+   
+  tags: never,remove-url
+
+- name: Reloading apache service to take changes effect
+  service:
+    name: "{{item}}"
+    state: reloaded
+  loop: [apache2]
+  tags: never, services, remove-url

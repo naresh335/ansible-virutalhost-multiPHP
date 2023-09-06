@@ -235,10 +235,12 @@
 
 - name: Installing phpmyadmin
   ansible.builtin.unarchive:
-    src: https://files.phpmyadmin.net/phpMyAdmin/5.1.0/phpMyAdmin-5.1.0-english.tar.xz
+    src: https://www.phpmyadmin.net/downloads/phpMyAdmin-latest-english.tar.xz
     dest: "/home/{{user}}/{{directory}}/{{url}}/public/"
     remote_src: yes
     extra_opts: [--strip-components=1]
+    owner: "{{user}}"
+    group: "{{user}}"
   when: not project_already_installed.stat.exists
   tags: never, phpmyadmin
 
@@ -248,6 +250,8 @@
     dest: "/home/{{user}}/{{directory}}/{{url}}/public/"
     remote_src: yes
     extra_opts: [--strip-components=1]
+    owner: "{{user}}"
+    group: "{{user}}"
   when: not project_already_installed.stat.exists
   tags: never, wordpress
 
