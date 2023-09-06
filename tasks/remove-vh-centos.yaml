@@ -1,0 +1,21 @@
+- name: Removing old site "{{old_url}}"
+  file:
+    path: "{{item}}"
+    state: absent
+  loop: ["/etc/httpd/conf.d/{{old_url}}.conf","/etc/httpd/sites-available/{{old_url}}.conf"]
+  tags: never, remove-url
+
+- name: Delete entry in hostfile 
+  lineinfile: 
+    path: /etc/hosts
+    regexp: "127.0.0.1 {{old_url}}"
+    state: absent
+   
+  tags: never,remove-url
+
+- name: Reloading apache service to take changes effect
+  service:
+    name: "{{item}}"
+    state: reloaded
+  loop: ["httpd"]
+  tags: never, services, remove-url
