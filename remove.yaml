@@ -1,0 +1,9 @@
+- hosts: localhost 
+  become: true
+  connection: local
+
+  tasks:
+  - import_tasks: tasks/remove-vh-ubuntu.yaml
+    when: ansible_distribution in ["Debian","Ubuntu"]
+  - import_tasks: tasks/remove-vh-centos.yaml
+    when: ansible_distribution in ["Amazon","RedHat","CentOS"]
